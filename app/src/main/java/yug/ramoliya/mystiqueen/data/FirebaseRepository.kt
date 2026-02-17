@@ -128,57 +128,16 @@ class FirebaseRepository {
 
     // ---------- ONLINE STATUS ----------
     private var connectionListener: ValueEventListener? = null
-
     fun setOnlineStatus(isOnline: Boolean) {
         val status = if (isOnline) "online" else "offline"
-        Log.d(TAG, "Setting online status: $status for user: ${Constants.CURRENT_USER_ID}")
+        Log.d(yug.ramoliya.mystiqueen.data.TAG, "Setting online status: $status for user: ${Constants.CURRENT_USER_ID}")
 
-        // Remove previous listener if exists
-        connectionListener?.let {
-            db.reference.child(".info").child("connected").removeEventListener(it)
-        }
-
-        if (isOnline) {
-            // Set up disconnect listener to set offline when connection is lost
-            connectionListener = object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val connected = snapshot.getValue(Boolean::class.java) ?: false
-                    Log.d(TAG, "Connection status changed: $connected")
-                    if (!connected) {
-                        // Connection lost, set offline
-                        statusRef.child(Constants.CURRENT_USER_ID).setValue("offline")
-                            .addOnSuccessListener {
-                                Log.d(TAG, "Status set to offline due to disconnection")
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e(TAG, "Failed to set offline status: ${e.message}", e)
-                            }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e(TAG, "Connection listener cancelled: ${error.message}")
-                }
-            }
-
-            db.reference.child(".info").child("connected").addValueEventListener(connectionListener!!)
-        }
-
-        // Set status immediately with priority to ensure it's written
         statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
             .addOnSuccessListener {
-                Log.d(TAG, "Status set to: $status")
+                Log.d(yug.ramoliya.mystiqueen.data.TAG, "Status updated to: $status")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to set status: ${e.message}", e)
-                // Retry once
-                statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
-                    .addOnSuccessListener {
-                        Log.d(TAG, "Status set to: $status (retry successful)")
-                    }
-                    .addOnFailureListener { retryError ->
-                        Log.e(TAG, "Failed to set status on retry: ${retryError.message}", retryError)
-                    }
+                Log.e(yug.ramoliya.mystiqueen.data.TAG, "Failed to update status: ${e.message}", e)
             }
     }
 
