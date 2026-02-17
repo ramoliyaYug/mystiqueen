@@ -42,9 +42,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Set online status when app comes to foreground
+        viewModel?.setOnline(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Set offline status when app goes to background
+        viewModel?.setOnline(false)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Ensure offline status is set when activity stops (more reliable than onDestroy)
+        viewModel?.setOnline(false)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        // Set offline status when activity is destroyed
+        // Final fallback to ensure offline status is set
         viewModel?.setOnline(false)
     }
 

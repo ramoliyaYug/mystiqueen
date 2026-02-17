@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.constants.generateMessageId
-import yug.ramoliya.mystiqueen.data.MessageModel
 
 private const val TAG = "FirebaseRepository"
 
@@ -128,23 +127,31 @@ class FirebaseRepository {
     }
 
     // ---------- ONLINE STATUS ----------
+    private var connectionListener: ValueEventListener? = null
+
     fun setOnlineStatus(isOnline: Boolean) {
         val status = if (isOnline) "online" else "offline"
         Log.d(TAG, "Setting online status: $status for user: ${Constants.CURRENT_USER_ID}")
 
-        // Also set up disconnect listener to set offline when connection is lost
-        db.reference.child(".info").child("connected").addValueEventListener(
-            object : ValueEventListener {
+        // Remove previous listener if exists
+        connectionListener?.let {
+            db.reference.child(".info").child("connected").removeEventListener(it)
+        }
+
+        if (isOnline) {
+            // Set up disconnect listener to set offline when connection is lost
+            connectionListener = object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val connected = snapshot.getValue(Boolean::class.java) ?: false
                     Log.d(TAG, "Connection status changed: $connected")
-                    if (connected) {
-                        statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
+                    if (!connected) {
+                        // Connection lost, set offline
+                        statusRef.child(Constants.CURRENT_USER_ID).setValue("offline")
                             .addOnSuccessListener {
-                                Log.d(TAG, "Status updated to: $status")
+                                Log.d(TAG, "Status set to offline due to disconnection")
                             }
                             .addOnFailureListener { e ->
-                                Log.e(TAG, "Failed to update status: ${e.message}", e)
+                                Log.e(TAG, "Failed to set offline status: ${e.message}", e)
                             }
                     }
                 }
@@ -153,14 +160,25 @@ class FirebaseRepository {
                     Log.e(TAG, "Connection listener cancelled: ${error.message}")
                 }
             }
-        )
 
+            db.reference.child(".info").child("connected").addValueEventListener(connectionListener!!)
+        }
+
+        // Set status immediately with priority to ensure it's written
         statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
             .addOnSuccessListener {
-                Log.d(TAG, "Initial status set to: $status")
+                Log.d(TAG, "Status set to: $status")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to set initial status: ${e.message}", e)
+                Log.e(TAG, "Failed to set status: ${e.message}", e)
+                // Retry once
+                statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
+                    .addOnSuccessListener {
+                        Log.d(TAG, "Status set to: $status (retry successful)")
+                    }
+                    .addOnFailureListener { retryError ->
+                        Log.e(TAG, "Failed to set status on retry: ${retryError.message}", retryError)
+                    }
             }
     }
 

@@ -17,6 +17,7 @@ import yug.ramoliya.mystiqueen.data.GithubRepository
 import yug.ramoliya.mystiqueen.service.NotificationService
 import yug.ramoliya.mystiqueen.data.MessageModel
 import java.io.File
+import kotlin.compareTo
 
 private const val TAG = "ChatViewModel"
 
@@ -208,6 +209,22 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 val previousMessages = _messages.value
                 _messages.value = list
 
+                // Mark delivered messages as seen when app is active
+                // Only update messages that changed from delivered to avoid duplicate updates
+                list.forEach { message ->
+                    if (message.receiverId == Constants.CURRENT_USER_ID &&
+                        message.status == Constants.STATUS_DELIVERED) {
+                        // Check if this message was already seen in previous list to avoid duplicate updates
+                        val wasAlreadySeen = previousMessages.any {
+                            it.messageId == message.messageId && it.status == Constants.STATUS_SEEN
+                        }
+                        if (!wasAlreadySeen) {
+                            // Mark as seen
+                            firebaseRepo.updateMessageStatus(message.messageId, Constants.STATUS_SEEN)
+                        }
+                    }
+                }
+
                 // Show notification for new messages when app is in background
                 if (previousMessages.isNotEmpty() && list.size > previousMessages.size) {
                     val newMessages = list.filter { newMsg ->
@@ -227,6 +244,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             messageText = messageText,
                             senderName = Constants.OTHER_USER_ID
                         )
+                    }
+                } else if (previousMessages.isEmpty() && list.isNotEmpty()) {
+                    // First time loading messages - mark all delivered as seen
+                    list.forEach { message ->
+                        if (message.receiverId == Constants.CURRENT_USER_ID &&
+                            message.status == Constants.STATUS_DELIVERED) {
+                            firebaseRepo.updateMessageStatus(message.messageId, Constants.STATUS_SEEN)
+                        }
                     }
                 }
             }

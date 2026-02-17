@@ -263,8 +263,8 @@ fun AudioMessageBubble(
 private fun statusIcon(status: String): String {
     return when (status) {
         Constants.STATUS_SENT -> "✓"
-        Constants.STATUS_DELIVERED -> "✓✓"
-        Constants.STATUS_SEEN -> "✓✓"
+        Constants.STATUS_DELIVERED -> "✓"  // Single tick for delivered
+        Constants.STATUS_SEEN -> "✓✓"     // Double tick for seen
         else -> ""
     }
 }
