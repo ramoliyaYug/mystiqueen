@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.data
+package yug.ramoliya.mystiqueen.data
 
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers

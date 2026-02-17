@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.screen
+package yug.ramoliya.mystiqueen.screen
 
 import android.content.Context
 import android.net.Uri
@@ -25,7 +25,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import yug.ramoliya.daymaker.viewmodel.ChatViewModel
+import yug.ramoliya.mystiqueen.viewmodel.ChatViewModel
 import yug.ramoliya.mystiqueen.constants.Constants
 import java.io.File
 

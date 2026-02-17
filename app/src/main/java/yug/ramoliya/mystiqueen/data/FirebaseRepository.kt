@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.data
+package yug.ramoliya.mystiqueen.data
 
 import android.util.Log
 import com.google.firebase.database.*

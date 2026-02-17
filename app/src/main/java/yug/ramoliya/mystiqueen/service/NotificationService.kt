@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.service
+package yug.ramoliya.mystiqueen.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

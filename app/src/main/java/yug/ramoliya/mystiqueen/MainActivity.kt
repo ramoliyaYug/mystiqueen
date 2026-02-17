@@ -12,8 +12,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import yug.ramoliya.daymaker.screen.ChatScreen
-import yug.ramoliya.daymaker.viewmodel.ChatViewModel
+import yug.ramoliya.mystiqueen.screen.ChatScreen
+import yug.ramoliya.mystiqueen.viewmodel.ChatViewModel
 import yug.ramoliya.mystiqueen.ui.theme.MystiqueenTheme
 
 class MainActivity : ComponentActivity() {

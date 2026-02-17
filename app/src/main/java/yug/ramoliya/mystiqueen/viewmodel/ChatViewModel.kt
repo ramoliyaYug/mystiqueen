@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.viewmodel
+package yug.ramoliya.mystiqueen.viewmodel
 
 import android.app.Application
 import android.util.Log
@@ -12,9 +12,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.constants.generateMessageId
-import yug.ramoliya.daymaker.data.FirebaseRepository
-import yug.ramoliya.daymaker.data.GithubRepository
-import yug.ramoliya.daymaker.service.NotificationService
+import yug.ramoliya.mystiqueen.data.FirebaseRepository
+import yug.ramoliya.mystiqueen.data.GithubRepository
+import yug.ramoliya.mystiqueen.service.NotificationService
 import yug.ramoliya.mystiqueen.data.MessageModel
 import java.io.File
 

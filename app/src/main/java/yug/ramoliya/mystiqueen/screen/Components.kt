@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.screen
+package yug.ramoliya.mystiqueen.screen
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing

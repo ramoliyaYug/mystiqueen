@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.screen
+package yug.ramoliya.mystiqueen.screen
 
 import android.net.Uri
 import androidx.annotation.OptIn

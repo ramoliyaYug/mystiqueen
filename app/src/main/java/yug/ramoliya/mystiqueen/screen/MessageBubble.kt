@@ -1,4 +1,4 @@
-package yug.ramoliya.daymaker.screen
+package yug.ramoliya.mystiqueen.screen
 
 import android.content.Intent
 import android.net.Uri
