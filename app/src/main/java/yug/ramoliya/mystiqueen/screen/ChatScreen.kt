@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -39,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.screen.ChatTopBar
@@ -77,6 +81,19 @@ fun ChatScreen(
                 listState.animateScrollToItem(messages.size - 1)
             }
         }
+    }
+
+    // Pagination: load older messages when user scrolls to top
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .map { it == 0 }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect {
+                if (messages.isNotEmpty()) {
+                    vm.loadMoreMessages()
+                }
+            }
     }
 
     // Image Picker

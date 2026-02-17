@@ -14,10 +14,9 @@ import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.constants.generateMessageId
 import yug.ramoliya.mystiqueen.data.FirebaseRepository
 import yug.ramoliya.mystiqueen.data.GithubRepository
-import yug.ramoliya.mystiqueen.service.NotificationService
 import yug.ramoliya.mystiqueen.data.MessageModel
+import yug.ramoliya.mystiqueen.service.NotificationService
 import java.io.File
-import kotlin.compareTo
 
 private const val TAG = "ChatViewModel"
 
@@ -49,6 +48,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uploadProgress = MutableStateFlow(0)
     val uploadProgress: StateFlow<Int> = _uploadProgress.asStateFlow()
+
+    private var oldestLoadedTimestamp: Long? = null
+    private var isLoadingMore = false
 
     private var typingTimeoutJob: Job? = null
     private var statusUpdateJob: Job? = null
@@ -205,29 +207,37 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun observeMessages() {
         viewModelScope.launch {
-            firebaseRepo.listenMessages().collect { list ->
+            firebaseRepo.listenRecentMessages(limit = 10).collect { list ->
                 val previousMessages = _messages.value
-                _messages.value = list
+
+                // Merge new window with any already loaded older messages
+                val existingOlder = previousMessages.filter { existing ->
+                    list.none { it.messageId == existing.messageId }
+                }
+
+                val combined = (existingOlder + list).sortedBy { it.timestamp }
+                _messages.value = combined
+
+                // Track oldest timestamp for pagination
+                oldestLoadedTimestamp = combined.minOfOrNull { it.timestamp }
 
                 // Mark delivered messages as seen when app is active
-                // Only update messages that changed from delivered to avoid duplicate updates
-                list.forEach { message ->
+                combined.forEach { message ->
                     if (message.receiverId == Constants.CURRENT_USER_ID &&
-                        message.status == Constants.STATUS_DELIVERED) {
-                        // Check if this message was already seen in previous list to avoid duplicate updates
+                        message.status == Constants.STATUS_DELIVERED
+                    ) {
                         val wasAlreadySeen = previousMessages.any {
                             it.messageId == message.messageId && it.status == Constants.STATUS_SEEN
                         }
                         if (!wasAlreadySeen) {
-                            // Mark as seen
                             firebaseRepo.updateMessageStatus(message.messageId, Constants.STATUS_SEEN)
                         }
                     }
                 }
 
                 // Show notification for new messages when app is in background
-                if (previousMessages.isNotEmpty() && list.size > previousMessages.size) {
-                    val newMessages = list.filter { newMsg ->
+                if (previousMessages.isNotEmpty() && combined.size > previousMessages.size) {
+                    val newMessages = combined.filter { newMsg ->
                         !previousMessages.any { it.messageId == newMsg.messageId } &&
                                 newMsg.senderId != Constants.CURRENT_USER_ID
                     }
@@ -245,15 +255,46 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             senderName = Constants.OTHER_USER_ID
                         )
                     }
-                } else if (previousMessages.isEmpty() && list.isNotEmpty()) {
+                } else if (previousMessages.isEmpty() && combined.isNotEmpty()) {
                     // First time loading messages - mark all delivered as seen
-                    list.forEach { message ->
+                    combined.forEach { message ->
                         if (message.receiverId == Constants.CURRENT_USER_ID &&
-                            message.status == Constants.STATUS_DELIVERED) {
+                            message.status == Constants.STATUS_DELIVERED
+                        ) {
                             firebaseRepo.updateMessageStatus(message.messageId, Constants.STATUS_SEEN)
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // ---------- PAGINATION ----------
+
+    fun loadMoreMessages() {
+        val before = oldestLoadedTimestamp ?: return
+        if (isLoadingMore) return
+
+        viewModelScope.launch {
+            try {
+                isLoadingMore = true
+                val older = firebaseRepo.loadOlderMessages(beforeTimestamp = before, limit = 10)
+                if (older.isEmpty()) {
+                    return@launch
+                }
+
+                val current = _messages.value
+                // Prepend older messages, avoiding duplicates
+                val newCombined = (older + current)
+                    .distinctBy { it.messageId }
+                    .sortedBy { it.timestamp }
+
+                _messages.value = newCombined
+                oldestLoadedTimestamp = newCombined.minOfOrNull { it.timestamp }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load older messages", e)
+            } finally {
+                isLoadingMore = false
             }
         }
     }

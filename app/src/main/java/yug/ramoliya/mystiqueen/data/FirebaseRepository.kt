@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.constants.generateMessageId
+import kotlin.sequences.ifEmpty
 
 private const val TAG = "FirebaseRepository"
 
@@ -45,41 +46,74 @@ class FirebaseRepository {
             }
     }
 
-    // ---------- LISTEN MESSAGES ----------
-    fun listenMessages(): Flow<List<MessageModel>> = callbackFlow {
+    // ---------- LISTEN RECENT MESSAGES (PAGINATED) ----------
+    /**
+     * Listen to the most recent [limit] messages and keep them live-updated.
+     * This does NOT load the entire history, only a window from the bottom.
+     */
+    fun listenRecentMessages(limit: Int = 10): Flow<List<MessageModel>> = callbackFlow {
 
-//        Log.d(TAG, "Setting up message listener on path: ${messagesRef.path}")
+        val query = messagesRef
+            .orderByChild("timestamp")
+            .limitToLast(limit)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                Log.d(TAG, "Data changed, snapshot exists: ${snapshot.exists()}, children count: ${snapshot.childrenCount}")
                 val list = mutableListOf<MessageModel>()
 
                 for (child in snapshot.children) {
                     val msg = child.getValue(MessageModel::class.java)
                     if (msg != null) {
                         list.add(msg)
-                        Log.d(TAG, "Loaded message: ${msg.messageId}")
-                    } else {
-                        Log.w(TAG, "Failed to parse message from snapshot: ${child.key}")
                     }
                 }
 
-                Log.d(TAG, "Total messages loaded: ${list.size}")
                 trySend(list.sortedBy { it.timestamp })
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Message listener cancelled: ${error.message}, code: ${error.code}, details: ${error.details}")
                 close(error.toException())
             }
         }
 
-        messagesRef.addValueEventListener(listener)
+        query.addValueEventListener(listener)
 
         awaitClose {
-            Log.d(TAG, "Removing message listener")
             messagesRef.removeEventListener(listener)
+        }
+    }
+
+    /**
+     * Load older messages once, before the given [beforeTimestamp].
+     * Returns at most [limit] older messages (sorted oldest -> newest).
+     */
+    suspend fun loadOlderMessages(beforeTimestamp: Long, limit: Int = 10): List<MessageModel> {
+        return kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            val query = messagesRef
+                .orderByChild("timestamp")
+                .endAt((beforeTimestamp - 1).toDouble())
+                .limitToLast(limit)
+
+            query.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<MessageModel>()
+                    for (child in snapshot.children) {
+                        val msg = child.getValue(MessageModel::class.java)
+                        if (msg != null) {
+                            list.add(msg)
+                        }
+                    }
+                    if (cont.isActive) {
+                        cont.resume(list.sortedBy { it.timestamp }, null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    if (cont.isActive) {
+                        cont.resume(emptyList(), null)
+                    }
+                }
+            })
         }
     }
 
@@ -127,17 +161,16 @@ class FirebaseRepository {
     }
 
     // ---------- ONLINE STATUS ----------
-    private var connectionListener: ValueEventListener? = null
     fun setOnlineStatus(isOnline: Boolean) {
         val status = if (isOnline) "online" else "offline"
-        Log.d(yug.ramoliya.mystiqueen.data.TAG, "Setting online status: $status for user: ${Constants.CURRENT_USER_ID}")
+        Log.d(TAG, "Setting online status: $status for user: ${Constants.CURRENT_USER_ID}")
 
         statusRef.child(Constants.CURRENT_USER_ID).setValue(status)
             .addOnSuccessListener {
-                Log.d(yug.ramoliya.mystiqueen.data.TAG, "Status updated to: $status")
+                Log.d(TAG, "Status updated to: $status")
             }
             .addOnFailureListener { e ->
-                Log.e(yug.ramoliya.mystiqueen.data.TAG, "Failed to update status: ${e.message}", e)
+                Log.e(TAG, "Failed to update status: ${e.message}", e)
             }
     }
 
