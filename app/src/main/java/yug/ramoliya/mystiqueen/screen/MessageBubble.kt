@@ -4,11 +4,22 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Done
+import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +45,9 @@ import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.constants.Constants.CURRENT_USER_ID
 import yug.ramoliya.mystiqueen.constants.toChatTime
 import yug.ramoliya.mystiqueen.data.MessageModel
+import yug.ramoliya.mystiqueen.ui.theme.GradientPink
+import yug.ramoliya.mystiqueen.ui.theme.GradientPurple
+import yug.ramoliya.mystiqueen.ui.theme.GradientViolet
 
 @Composable
 fun MessageBubble(
@@ -43,10 +58,15 @@ fun MessageBubble(
 
     val isMe = message.senderId == CURRENT_USER_ID
 
-    val bubbleColor = if (isMe)
-        MaterialTheme.colorScheme.primary
+    val bubbleBrush = if (isMe)
+        Brush.linearGradient(listOf(GradientPurple, GradientPink, GradientViolet))
     else
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        Brush.linearGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            )
+        )
 
     val textColor = if (isMe)
         MaterialTheme.colorScheme.onPrimary
@@ -71,7 +91,7 @@ fun MessageBubble(
                         bottomEnd = if (isMe) 4.dp else 16.dp
                     )
                 )
-                .background(bubbleColor)
+                .background(bubbleBrush)
                 .padding(10.dp)
         ) {
 
@@ -81,8 +101,9 @@ fun MessageBubble(
                 Constants.TYPE_TEXT -> {
                     Text(
                         text = message.text,
-                        color = textColor,
-                        fontSize = 15.sp
+                        color = if (isMe) Color.White else textColor,
+                        fontSize = 15.sp,
+                        fontWeight = if (isMe) FontWeight.SemiBold else FontWeight.Medium
                     )
                 }
 
@@ -128,20 +149,12 @@ fun MessageBubble(
                 Text(
                     text = message.timestamp.toChatTime(),
                     fontSize = 9.sp,
-                    color = if (isMe) Color.White.copy(alpha = 0.8f) else Color.Gray
+                    color = if (isMe) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.Medium
                 )
 
                 if (isMe) {
-                    Text(
-                        text = statusIcon(message.status),
-                        fontSize = 11.sp,
-                        color = when (message.status) {
-                            Constants.STATUS_SEEN -> Color(0xFF64B5F6)
-                            Constants.STATUS_DELIVERED -> Color.White.copy(alpha = 0.9f)
-                            else -> Color.White.copy(alpha = 0.7f)
-                        },
-                        fontWeight = FontWeight.Bold
-                    )
+                    StatusTicks(status = message.status)
                 }
             }
         }
@@ -260,11 +273,24 @@ fun AudioMessageBubble(
 
 // ---------- STATUS ICON ----------
 @Composable
-private fun statusIcon(status: String): String {
-    return when (status) {
-        Constants.STATUS_SENT -> "✓"
-        Constants.STATUS_DELIVERED -> "✓"  // Single tick for delivered
-        Constants.STATUS_SEEN -> "✓✓"     // Double tick for seen
-        else -> ""
+private fun StatusTicks(status: String) {
+    val tint = when (status) {
+        Constants.STATUS_SEEN -> Color(0xFF7FE7FF) // cute cyan for "seen"
+        Constants.STATUS_DELIVERED -> Color.White.copy(alpha = 0.95f)
+        else -> Color.White.copy(alpha = 0.75f)
     }
+
+    val icon = when (status) {
+        Constants.STATUS_SEEN -> Icons.Outlined.DoneAll
+        Constants.STATUS_DELIVERED -> Icons.Outlined.Done
+        Constants.STATUS_SENT -> Icons.Outlined.Done
+        else -> Icons.Outlined.Done
+    }
+
+    Icon(
+        imageVector = icon,
+        contentDescription = "Message status: $status",
+        tint = tint,
+        modifier = Modifier.size(16.dp)
+    )
 }

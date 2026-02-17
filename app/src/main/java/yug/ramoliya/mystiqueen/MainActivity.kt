@@ -6,15 +6,41 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import yug.ramoliya.mystiqueen.R
+import yug.ramoliya.mystiqueen.constants.Constants
 import yug.ramoliya.mystiqueen.screen.ChatScreen
-import yug.ramoliya.mystiqueen.viewmodel.ChatViewModel
 import yug.ramoliya.mystiqueen.ui.theme.MystiqueenTheme
+import yug.ramoliya.mystiqueen.ui.theme.GradientPink
+import yug.ramoliya.mystiqueen.ui.theme.GradientPurple
+import yug.ramoliya.mystiqueen.ui.theme.GradientViolet
+import yug.ramoliya.mystiqueen.viewmodel.ChatViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -29,13 +55,24 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            MystiqueenTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ChatScreenContent { vm ->
-                        viewModel = vm
+            MystiqueenTheme (isFullScreen = true){
+                var showSplash by remember { mutableStateOf(true) }
+
+                LaunchedEffect(Unit) {
+                    delay(1500)
+                    showSplash = false
+                }
+
+                if (showSplash) {
+                    SplashScreen()
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        ChatScreenContent { vm ->
+                            viewModel = vm
+                        }
                     }
                 }
             }
@@ -91,4 +128,67 @@ fun ChatScreenContent(onViewModelCreated: (ChatViewModel) -> Unit) {
     )
     onViewModelCreated(vm)
     ChatScreen(vm = vm)
+}
+
+@Composable
+fun SplashScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        GradientPurple,
+                        GradientPink,
+                        GradientViolet
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(GradientPink, GradientPurple)
+                        ),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App logo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color.Transparent, shape = androidx.compose.foundation.shape.CircleShape)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                )
+            }
+
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = Constants.OTHER_USER_ID,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = Color.White,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            )
+
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "cute little chat for two",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            )
+        }
+    }
 }
