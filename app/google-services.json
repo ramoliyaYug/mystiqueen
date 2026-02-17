@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "515832305266",
+    "firebase_url": "https://twinchatapp-be11d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "twinchatapp-be11d",
+    "storage_bucket": "twinchatapp-be11d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:515832305266:android:3347a67207d504df08d4eb",
+        "android_client_info": {
+          "package_name": "yug.ramoliya.daymaker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAFiSKpUz0pMr9M6lsKoA9bgJqw9J6VJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:515832305266:android:f2cc142283e310df08d4eb",
+        "android_client_info": {
+          "package_name": "yug.ramoliya.mystiqueen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAFiSKpUz0pMr9M6lsKoA9bgJqw9J6VJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
